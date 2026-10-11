@@ -1,5 +1,7 @@
 # Deploy and Host Mem0 with Railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/mem0-v2-ai-memory-layer?referralCode=20H68q)
+
 Mem0 is an open-source memory layer for AI agents and assistants. It extracts durable facts from conversations, stores them as embeddings in Postgres with pgvector, and returns the relevant ones for each user, agent or session. This template deploys Mem0's self-hosted REST API, its web dashboard and a pgvector database, ready for your agents to call.
 
 ## About Hosting Mem0
