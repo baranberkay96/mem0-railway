@@ -1,0 +1,347 @@
+{
+  "name": "Mem0 v2 AI Memory Layer",
+  "description": "Persistent memory for AI agents: REST API, dashboard and pgvector storage.",
+  "category": "AI/ML",
+  "tags": [
+    "mem0",
+    "memory",
+    "ai-agents",
+    "llm",
+    "rag",
+    "pgvector",
+    "embeddings",
+    "openai"
+  ],
+  "image": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/mem0.svg",
+  "upstream": {
+    "repo": "mem0ai/mem0",
+    "version": "v2.2.1 (server/ and server/dashboard/ at tag v2.2.1, mem0ai[nlp]==2.2.1)",
+    "checked": "2026-10-11"
+  },
+  "services": {
+    "Mem0 API": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/mem0.svg",
+      "source": {
+        "repo": "baranberkay96/mem0-railway",
+        "rootDirectory": "/services/api"
+      },
+      "startCommand": null,
+      "preDeployCommand": "sh -c 'cd /app && python railway/prepare_db.py && alembic upgrade head && python railway/bootstrap_admin.py'",
+      "healthcheckPath": "/docs",
+      "healthcheckTimeout": 300,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": true,
+      "targetPort": 8000,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/app/history"
+      },
+      "preDeployTimeoutSeconds": 600,
+      "variables": {
+        "PORT": {
+          "defaultValue": "8000",
+          "description": "Port uvicorn listens on (0.0.0.0). Railway routes the domain and the healthcheck here.",
+          "required": false
+        },
+        "OPENAI_API_KEY": {
+          "defaultValue": "",
+          "description": "REQUIRED. OpenAI (or OpenAI-compatible, see OPENAI_BASE_URL) key for memory extraction and embeddings. The API does not boot without it.",
+          "required": true
+        },
+        "OPENAI_BASE_URL": {
+          "defaultValue": "",
+          "description": "Optional OpenAI-compatible endpoint (OpenRouter, LiteLLM, Azure gateway, ...). Empty = api.openai.com.",
+          "required": false
+        },
+        "MEM0_DEFAULT_LLM_MODEL": {
+          "defaultValue": "gpt-5-mini",
+          "description": "Model used to extract facts from conversations (upstream default). Can be changed later in the dashboard Configuration page.",
+          "required": false
+        },
+        "MEM0_DEFAULT_EMBEDDER_MODEL": {
+          "defaultValue": "text-embedding-3-small",
+          "description": "Embedding model (1536 dimensions, upstream default). Changing it after memories exist needs a new collection.",
+          "required": false
+        },
+        "ANTHROPIC_API_KEY": {
+          "defaultValue": "",
+          "description": "Optional. Lets you switch the LLM to Anthropic in the dashboard Configuration page (embeddings still need OpenAI or Gemini).",
+          "required": false
+        },
+        "GOOGLE_API_KEY": {
+          "defaultValue": "",
+          "description": "Optional. Lets you switch the LLM and/or embedder to Gemini in the dashboard Configuration page.",
+          "required": false
+        },
+        "POSTGRES_HOST": {
+          "defaultValue": "${{Postgres.PGHOST}}",
+          "description": "Private hostname of the pgvector Postgres service.",
+          "required": false
+        },
+        "POSTGRES_PORT": {
+          "defaultValue": "${{Postgres.PGPORT}}",
+          "description": "Postgres port.",
+          "required": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "${{Postgres.POSTGRES_USER}}",
+          "description": "Postgres superuser (needed to create the vector extension and the app database).",
+          "required": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{Postgres.POSTGRES_PASSWORD}}",
+          "description": "Postgres password, generated on the Postgres service.",
+          "required": false
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "${{Postgres.POSTGRES_DB}}",
+          "description": "Database holding the pgvector memory and entity tables.",
+          "required": false
+        },
+        "POSTGRES_COLLECTION_NAME": {
+          "defaultValue": "memories",
+          "description": "Table name of the memory embeddings.",
+          "required": false
+        },
+        "APP_DB_NAME": {
+          "defaultValue": "mem0_app",
+          "description": "Database for users, API keys, request logs and settings (created by the pre-deploy step, migrated by Alembic).",
+          "required": false
+        },
+        "HISTORY_DB_PATH": {
+          "defaultValue": "/app/history/history.db",
+          "description": "SQLite file with the change history of every memory. Lives on the /app/history volume.",
+          "required": false
+        },
+        "JWT_SECRET": {
+          "defaultValue": "${{secret(64)}}",
+          "description": "Signs dashboard access and refresh tokens. Rotating it logs every dashboard user out.",
+          "required": false
+        },
+        "ADMIN_API_KEY": {
+          "defaultValue": "${{secret(48)}}",
+          "description": "Server-wide admin key for scripts and agents: send it as the X-API-Key header. Per-user keys can be created in the dashboard.",
+          "required": false
+        },
+        "AUTH_DISABLED": {
+          "defaultValue": "false",
+          "description": "Keep false. true opens every endpoint without authentication (upstream: local development only).",
+          "required": false
+        },
+        "DASHBOARD_URL": {
+          "defaultValue": "https://${{Mem0 Dashboard.RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "Public dashboard origin; the only origin allowed by the API's CORS policy.",
+          "required": false
+        },
+        "MEM0_ADMIN_EMAIL": {
+          "defaultValue": "admin@example.com",
+          "description": "Login email of the dashboard admin created on first deploy (change it later under Settings). Empty = first visitor runs the setup wizard.",
+          "required": false
+        },
+        "MEM0_ADMIN_PASSWORD": {
+          "defaultValue": "${{secret(24)}}",
+          "description": "Password of that admin, generated at deploy. Only used while no user exists; change it later in the dashboard.",
+          "required": false
+        },
+        "MEM0_ADMIN_NAME": {
+          "defaultValue": "Admin",
+          "description": "Display name of the bootstrap admin.",
+          "required": false
+        },
+        "MEM0_TELEMETRY": {
+          "defaultValue": "false",
+          "description": "Upstream anonymous telemetry (PostHog, at most two events per install). Off in this template; set true to opt in.",
+          "required": false
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "15",
+          "description": "Grace period for in-flight requests on redeploy.",
+          "required": false
+        }
+      }
+    },
+    "Mem0 Dashboard": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/mem0.svg",
+      "source": {
+        "repo": "baranberkay96/mem0-railway",
+        "rootDirectory": "/services/dashboard"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": "/api/health",
+      "healthcheckTimeout": 300,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": true,
+      "targetPort": 3000,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "PORT": {
+          "defaultValue": "3000",
+          "description": "Next.js port. Railway routes the domain and the /api/health healthcheck here.",
+          "required": false
+        },
+        "HOSTNAME": {
+          "defaultValue": "0.0.0.0",
+          "description": "Address Next.js binds to. Must not be the container hostname, or the healthcheck cannot connect.",
+          "required": false
+        },
+        "NEXT_PUBLIC_API_URL": {
+          "defaultValue": "https://${{Mem0 API.RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "Public URL of the Mem0 API, called from the browser. Written into the bundle at container start.",
+          "required": false
+        },
+        "API_INTERNAL_URL": {
+          "defaultValue": "http://${{Mem0 API.RAILWAY_PRIVATE_DOMAIN}}:${{Mem0 API.PORT}}",
+          "description": "Private URL the dashboard server uses (setup status, token refresh).",
+          "required": false
+        },
+        "DASHBOARD_URL": {
+          "defaultValue": "https://${{RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "Own public origin; an https origin makes the refresh-token cookie Secure.",
+          "required": false
+        },
+        "NEXT_PUBLIC_INSTANCE_NAME": {
+          "defaultValue": "Mem0",
+          "description": "Name shown in the dashboard header.",
+          "required": false
+        }
+      }
+    },
+    "Mem0 Log Pruner": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/mem0.svg",
+      "source": {
+        "repo": "baranberkay96/mem0-railway",
+        "rootDirectory": "/services/api"
+      },
+      "startCommand": "sh -c 'cd /app && exec python scripts/prune_request_logs.py'",
+      "preDeployCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "NEVER",
+      "restartPolicyMaxRetries": null,
+      "numReplicas": 1,
+      "cronSchedule": "30 3 * * *",
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "POSTGRES_HOST": {
+          "defaultValue": "${{Postgres.PGHOST}}",
+          "description": "Private hostname of Postgres.",
+          "required": false
+        },
+        "POSTGRES_PORT": {
+          "defaultValue": "${{Postgres.PGPORT}}",
+          "description": "Postgres port.",
+          "required": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "${{Postgres.POSTGRES_USER}}",
+          "description": "Postgres user.",
+          "required": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{Postgres.POSTGRES_PASSWORD}}",
+          "description": "Postgres password.",
+          "required": false
+        },
+        "APP_DB_NAME": {
+          "defaultValue": "${{Mem0 API.APP_DB_NAME}}",
+          "description": "App database that holds the request_logs table.",
+          "required": false
+        },
+        "REQUEST_LOG_RETENTION_DAYS": {
+          "defaultValue": "30",
+          "description": "Delete API request log rows older than this many days (upstream default 30).",
+          "required": false
+        }
+      }
+    },
+    "Postgres": {
+      "icon": "https://devicons.railway.app/i/postgresql.svg",
+      "source": {
+        "image": "pgvector/pgvector:0.8.7-pg17"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/var/lib/postgresql/data"
+      },
+      "variables": {
+        "PGDATA": {
+          "defaultValue": "/var/lib/postgresql/data/pgdata",
+          "description": "Location where the database will be initialized",
+          "required": true
+        },
+        "PGHOST": {
+          "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Railway Private Domain Name.",
+          "required": true
+        },
+        "PGPORT": {
+          "defaultValue": "5432",
+          "description": "Port to connect to Postgres.",
+          "required": true
+        },
+        "PGUSER": {
+          "defaultValue": "${{ POSTGRES_USER }}",
+          "description": "Required variable for Data panel",
+          "required": true
+        },
+        "PGDATABASE": {
+          "defaultValue": "${{POSTGRES_DB}}",
+          "description": "Required variable for the data panel.",
+          "required": true
+        },
+        "PGPASSWORD": {
+          "defaultValue": "${{POSTGRES_PASSWORD}}",
+          "description": "Required variable for Data panel",
+          "required": true
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "mem0",
+          "description": "Database for the pgvector memory tables (the app database mem0_app is created next to it by the API pre-deploy step).",
+          "required": true
+        },
+        "DATABASE_URL": {
+          "defaultValue": "postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{PGDATABASE}}",
+          "description": "URL to connect to Postgres (private network, no TLS).",
+          "required": true
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "postgres",
+          "description": "User to connect to Postgres DB",
+          "required": true
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+          "description": "Password to connect to DB",
+          "required": true
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "60",
+          "description": "Allow Postgres to cleanly shut down",
+          "required": true
+        }
+      }
+    }
+  },
+  "buckets": []
+}
